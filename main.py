@@ -13,11 +13,21 @@ program models the two counts separately and divides at the target:
 Both counts grow roughly as power laws in the time since release, so each is
 fitted in log space against u = ln(1 + hours since release midnight), with
 an exponentially recency-weighted least-squares line (a read's weight halves
-every ~0.55 units of u, about the last day of the case's history at the
-deadline). The recency weighting matters because earners saturate: a trophy
-everyone gets early stops growing long before the target, and a fit over
-the whole history would carry its steep early climb forward and forecast
-it near 100%. Forecasts are anchored on the last read, not on the fitted
+every ~0.12 units of u, so at the deadline the fit is governed by roughly
+the last day of the case's history). The strong recency weighting matters
+for two reasons. First, earners saturate: a trophy everyone gets early
+stops growing long before the target, and a fit over the whole history
+would carry its steep early climb forward and forecast it near 100%.
+Second, the tracked population itself changes character over the first
+week -- the earliest trackers are the most committed players, and their
+earning slopes describe a mix that no longer holds by the deadline; the
+slopes that persist to the target are the recent ones. (The half-life was
+stress-tested against simulated week-one evolutions of the page -- cohort
+models with drifting player mix, saturating maturity curves, stale-page
+refresh timing and observation noise: shortening it from 0.55 to ~0.12
+lowered the mean pinball loss on every simulated world, and the bands
+below were widened slightly to offset the narrower local fits' smaller
+residuals.) Forecasts are anchored on the last read, not on the fitted
 intercept, so a noisy early history cannot drag the level away from what
 the page actually says now.
 Per-trophy earner slopes are shrunk toward the cross-trophy median slope,
@@ -80,8 +90,11 @@ B_PRIOR = 1.05
 R_REFRESH_H = 4.5
 
 # --- Spread parameters, in logit units ---
-S_BASE = 0.30        # refresh timing and model error, always present
-S_HORIZON = 0.35     # per sqrt(day) of horizon
+# Widened ~15% from the original 0.30 / 0.35: the strongly recency-weighted
+# fits track recent dynamics better but their residuals understate how far
+# a 4.5-day extrapolation can miss, so the base bands compensate.
+S_BASE = 0.345       # refresh timing and model error, always present
+S_HORIZON = 0.4025   # per sqrt(day) of horizon
 S_MAX = 1.40
 S_MIN = 0.30
 
@@ -294,13 +307,15 @@ def forecast_rich(case, snaps, midnight):
     days = case["horizon_minutes"] / 1440.0
 
     us = [s["u"] for s in snaps]
-    # Recency weights: a read's weight halves every ~0.55 units of u
-    # (about the last day of the case's history at the deadline). Trophy
+    # Recency weights: a read's weight halves every ~0.12 units of u
+    # (roughly the last day of the case's history at the deadline). Trophy
     # earners saturate -- a trophy everyone gets early stops growing long
     # before the target -- so the slope that matters is the recent one:
     # fitting the whole history would carry the steep early climb forward
-    # and forecast saturated trophies near 100%.
-    W_HALF = 0.55
+    # and forecast saturated trophies near 100%. The recent window also
+    # reflects the current tracked-player mix; launch-phase slopes come
+    # from a far more hardcore population and extrapolate badly.
+    W_HALF = 0.12
     ws = [math.exp(-(u_last - u) * math.log(2) / W_HALF) for u in us]
 
     # Players tracked: log N ~ a + b*u.

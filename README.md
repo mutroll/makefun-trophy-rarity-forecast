@@ -18,14 +18,17 @@ target, instead of extrapolating the printed percentages directly.
 **When the history moves (the final case).** Both counts grow roughly as
 power laws in the time since release, so each is fitted in log space
 against u = ln(1 + hours since release midnight), with an exponentially
-recency-weighted least-squares line — a read's weight halves every ~0.55
-units of u, about the last day of history at the deadline. The recency
-weighting matters because earners saturate: a trophy everyone gets early
-stops growing long before the target, and a fit over the whole history
-would carry its steep early climb forward and forecast it near 100%.
-Forecasts are anchored on the last read, not on the fitted intercept.
-Per-trophy earner slopes are shrunk toward the cross-trophy median slope,
-and clamped so earners never shrink and never outrun players by much.
+recency-weighted least-squares line — a read's weight halves every ~0.12
+units of u, so at the deadline roughly the last day of history governs
+the fit. The strong recency weighting matters because earners saturate —
+a trophy everyone gets early stops growing long before the target, and a
+fit over the whole history would carry its steep early climb forward and
+forecast it near 100% — and because the tracked population changes
+character over the first week: launch-phase slopes come from a far more
+hardcore player mix and extrapolate badly. Forecasts are anchored on the
+last read, not on the fitted intercept. Per-trophy earner slopes are
+shrunk toward the cross-trophy median slope, and clamped so earners never
+shrink and never outrun players by much.
 
 On top of that, each trophy gets a saturating-rate fit — r(t) = cap ·
 (1 − exp(−t/τ)) and r(t) = cap · t/(t + τ), fitted by a grid search over τ
@@ -82,5 +85,18 @@ near 100%.
   a different (Hill-type) family, with 90% coverage 0.98–1.00 and a
   0.1 s run time. These test the machinery, not real-world accuracy —
   the synthetic truths are invented.
+- Week-one stress suite (added later): 15 simulated final cases from two
+  structurally different generators — a player-cohort model (arrivals,
+  pace classes, engagement churn, casual drift, refresh timing) and a
+  maturity-curve model with observation noise — spanning slow/huge/
+  front-loaded/late-flood player growth, stale pages (9 h refreshes),
+  fast and slow story progression. Scored with the competition's pinball
+  loss against each world's simulated 2026-11-26 rates, the original
+  half-life of 0.55 averaged 0.46 (worst world 0.88); the adopted
+  half-life of ~0.12 with bands widened ~15% averaged 0.34 (worst 0.66)
+  and beat the original on all 15 worlds, and beat both house baselines'
+  scores on the suite as a whole. The practice outputs are byte-identical
+  before and after the change (the practice histories are flat, so they
+  take the refresh-mixture path, which is untouched).
 - Edge cases (single read, empty history, null rates, 600 reads) all run
   and produce valid output.
